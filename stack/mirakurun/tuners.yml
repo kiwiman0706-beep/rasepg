@@ -1,0 +1,31 @@
+# PX-Q1UD = 地デジ(GR) 4チューナー。
+# PX-Q1UD は smsdvb で /dev/dvb/adapter0..3 として認識されるため、
+# recdvb の --dev N で各アダプタを指定します。
+# <channel> は channels.yml の物理チャンネル番号(13-62)に置換されます。
+- name: PX-Q1UD-0
+  types:
+    - GR
+  command: recdvb --b25 --strip --dev 0 <channel> - -
+  decoder: null
+  isDisabled: false
+
+- name: PX-Q1UD-1
+  types:
+    - GR
+  command: recdvb --b25 --strip --dev 1 <channel> - -
+  decoder: null
+  isDisabled: false
+
+- name: PX-Q1UD-2
+  types:
+    - GR
+  command: recdvb --b25 --strip --dev 2 <channel> - -
+  decoder: null
+  isDisabled: false
+
+- name: PX-Q1UD-3
+  types:
+    - GR
+  command: recdvb --b25 --strip --dev 3 <channel> - -
+  decoder: null
+  isDisabled: false

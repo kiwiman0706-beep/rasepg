@@ -1,0 +1,13 @@
+[Unit]
+Description=RASEPG 初回起動セットアップ (Docker イメージ構築/取得 + スタック起動)
+After=network-online.target docker.service
+Wants=network-online.target
+ConditionPathExists=!/etc/rasepg/.firstboot-done
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/rasepg/bootstrap/firstboot.sh
+
+[Install]
+WantedBy=multi-user.target

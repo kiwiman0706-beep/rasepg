@@ -1,0 +1,5 @@
+## Mirakurun server 設定
+# コンテナ内から待ち受け。EPGStation からは http://mirakurun:40772 で参照。
+port: 40772
+# 4ch 同時録画を想定。過負荷保護のため上限は tuner 数に合わせる。
+maxLogHistory: 1000

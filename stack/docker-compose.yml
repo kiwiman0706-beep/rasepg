@@ -1,0 +1,91 @@
+# RASEPG - 録画スタック (Mirakurun + EPGStation + MariaDB)
+# 管理パネル(RASEPG Admin)はホスト側 systemd で動作するためここには含めません。
+#
+# パス/保存先は .env で切り替えます（.env は RASEPG Admin が自動生成）。
+services:
+  mirakurun:
+    # recdvb(--b25) + libarib25 + pcsclite を同梱したカスタムイメージ
+    build:
+      context: ./mirakurun
+      dockerfile: Dockerfile
+    image: rasepg/mirakurun:local
+    container_name: mirakurun
+    restart: unless-stopped
+    init: true
+    devices:
+      # 地デジ用 DVB アダプタ (PX-Q1UD は smsdvb で /dev/dvb/adapterN として見える)
+      - /dev/dvb:/dev/dvb
+    volumes:
+      - ./mirakurun/tuners.yml:/app-config/tuners.yml
+      - ./mirakurun/channels.yml:/app-config/channels.yml
+      - ./mirakurun/server.yml:/app-config/server.yml
+      - mirakurun-data:/app-data
+      # ホストの pcscd ソケットを共有して B-CAS を読む
+      - /run/pcscd:/run/pcscd
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+    ports:
+      - "40772:40772"   # Mirakurun API
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: rasepg-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rasepg-root}
+      MYSQL_DATABASE: ${DB_NAME:-epgstation}
+      MYSQL_USER: ${DB_USER:-epgstation}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-epgstation}
+      TZ: ${TZ:-Asia/Tokyo}
+    command: >-
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --performance-schema=off
+      --expire-logs-days=1
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  epgstation:
+    image: l3tnun/epgstation:master-debian
+    container_name: epgstation
+    restart: unless-stopped
+    depends_on:
+      - mirakurun
+      - mariadb
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+      # エンコード品質(RASEPG Admin から .env 経由で設定)
+      RASEPG_HEIGHT: ${RASEPG_HEIGHT:-720}
+      RASEPG_VBITRATE: ${RASEPG_VBITRATE:-2000k}
+      RASEPG_ABITRATE: ${RASEPG_ABITRATE:-128k}
+      RASEPG_CRF: ${RASEPG_CRF:-23}
+      RASEPG_PRESET: ${RASEPG_PRESET:-veryfast}
+    devices:
+      # HW エンコード(h264_v4l2m2m)用に VideoCore を渡す
+      - /dev/video10:/dev/video10   # h264 encode
+      - /dev/video11:/dev/video11   # h264 decode
+      - /dev/video12:/dev/video12   # ISP/scaler
+    volumes:
+      - ./epgstation/config.yml:/app/config/config.yml
+      - ./epgstation/enc:/app/config/enc
+      - ./epgstation/logo:/app/thumbnail
+      - epgstation-data:/app/data
+      # 一時保存(録画/エンコード作業) と 最終保存(NAS) をホストからバインド
+      - ${RECORDED_TMP:-./recorded}:/recorded          # 録画一時(.ts) + エンコード出力
+      - ${RECORDED_NAS:-./nas}:/nas                     # NAS 最終保存先(SMB マウント先)
+    ports:
+      - "8888:8888"   # EPGStation Web UI
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  mirakurun-data:
+  mariadb-data:
+  epgstation-data:

@@ -1,0 +1,12 @@
+# このファイルは「チャンネルスキャン」で自動生成されます。
+# RASEPG Admin の [チャンネルスキャン] ボタン、または以下で生成:
+#   docker compose exec mirakurun mirakurun config channels scan --type GR
+#
+# 生成前のプレースホルダとして代表例のみ記載（地域により物理ch/serviceIdは異なります）。
+# channel = 物理チャンネル番号(13-62)。tuners.yml の <channel> に入ります。
+- name: NHK総合
+  type: GR
+  channel: "27"
+- name: Eテレ
+  type: GR
+  channel: "26"

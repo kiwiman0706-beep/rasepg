@@ -1,0 +1,23 @@
+# pi-gen 設定 (RASEPG カスタムイメージ)
+# GitHub Actions のワークフローがこの値を使ってビルドします。
+IMG_NAME="rasepg"
+RELEASE="bookworm"
+# 64bit(arm64) 推奨。Pi4/Pi5 対応。
+ARCH="arm64"
+# Lite(GUI 無し) をベースに RASEPG ステージを追加
+STAGE_LIST="stage0 stage1 stage2 stage-rasepg"
+
+# 初期ユーザ(Raspberry Pi Imager を使わずに書ける最小設定)
+# ※ 実際の配布では Imager でユーザ/WiFi を設定する運用を推奨
+FIRST_USER_NAME="rasepg"
+FIRST_USER_PASS="rasepg"
+DISABLE_FIRST_BOOT_USER_RENAME=0
+
+# SSH 有効化(初期トラブル対応用。管理は基本 Web パネル)
+ENABLE_SSH=1
+
+# ロケール/タイムゾーン
+TIMEZONE_DEFAULT="Asia/Tokyo"
+LOCALE_DEFAULT="ja_JP.UTF-8"
+KEYBOARD_KEYMAP="jp"
+KEYBOARD_LAYOUT="Japanese"

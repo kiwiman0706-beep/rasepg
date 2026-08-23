@@ -1,0 +1,58 @@
+name: Build SD image
+
+# RASEPG のカスタム Raspberry Pi OS イメージ(.img.xz)を pi-gen で自動ビルドします。
+# 完了後 Actions の Artifacts から .img.xz をダウンロードし、
+# Raspberry Pi Imager で SD カードに書き込んでください。
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Clone pi-gen
+        run: git clone --depth=1 --branch bookworm https://github.com/RPi-Distro/pi-gen.git pi-gen
+
+      - name: Place RASEPG config and stage
+        run: |
+          set -eux
+          cp image/config pi-gen/config
+          cp -r image/stage-rasepg pi-gen/stage-rasepg
+          # ステージ同梱リポジトリを用意(コンテナ内で完結)
+          mkdir -p pi-gen/stage-rasepg/00-rasepg/files/rasepg
+          rsync -a --exclude '.git' --exclude 'pi-gen' ./ pi-gen/stage-rasepg/00-rasepg/files/rasepg/
+          chmod +x pi-gen/stage-rasepg/prerun.sh pi-gen/stage-rasepg/00-rasepg/*.sh
+          # 中間(lite)イメージのエクスポートは不要なのでスキップ
+          touch pi-gen/stage2/SKIP_IMAGES
+          # NOOBS 生成無効化(容量/時間削減)
+          echo "ENABLE_NOOBS=0" >> pi-gen/config
+
+      - name: Build image (pi-gen in Docker)
+        working-directory: pi-gen
+        run: sudo CLEAN=1 ./build-docker.sh
+
+      - name: Collect artifacts
+        run: |
+          set -eux
+          mkdir -p out
+          find pi-gen/deploy -name '*.img.xz' -o -name '*.img.zip' -o -name '*.zip' | xargs -r -I{} cp {} out/ || true
+          ls -la out
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rasepg-image
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14

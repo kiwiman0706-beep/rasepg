@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RASEPG Admin</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>📺 RASEPG Admin</h1>
+  <nav>
+    <a href="http://{{ request.url.hostname }}:8888" target="_blank">EPGStation ↗</a>
+    <a href="http://{{ request.url.hostname }}:40772" target="_blank">Mirakurun ↗</a>
+  </nav>
+</header>
+
+{% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+
+<div class="tabs">
+  {% set tabs = [('dashboard','ダッシュボード'),('storage','保存先/NAS'),('encode','エンコード'),('services','サービス'),('system','システム')] %}
+  {% for key,label in tabs %}
+    <a class="tab {{ 'active' if tab==key else '' }}" href="/?tab={{ key }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<main>
+{% if tab == 'dashboard' %}
+  <section class="card">
+    <h2>ステータス</h2>
+    <table>
+      <tr><th>CPU 温度</th><td>{{ temp }}</td></tr>
+      <tr><th>DVB チューナー</th><td>{{ adapters|length }} 個 {{ adapters|join(', ') }}</td></tr>
+      <tr><th>B-CAS</th><td>{{ bcas }}</td></tr>
+      <tr><th>一時保存 ({{ cfg.recorded_tmp }})</th><td><code>{{ disk_tmp }}</code></td></tr>
+      <tr><th>NAS ({{ cfg.recorded_nas }})</th><td><code>{{ disk_nas }}</code></td></tr>
+    </table>
+  </section>
+  <section class="card">
+    <h2>コンテナ</h2>
+    <table>
+      <tr><th>サービス</th><th>状態</th></tr>
+      {% for s in services %}
+        <tr><td>{{ s.Service or s.Name }}</td><td>{{ s.State or s.Status }}</td></tr>
+      {% else %}
+        <tr><td colspan="2">起動していません。「サービス」タブから起動してください。</td></tr>
+      {% endfor %}
+    </table>
+    <form method="post" action="/system/scan" onsubmit="return confirm('チャンネルスキャンを実行しますか？数分かかります。')">
+      <button type="submit">チャンネルスキャン実行</button>
+    </form>
+  </section>
+
+{% elif tab == 'storage' %}
+  <section class="card">
+    <h2>一時保存先(外付けSSD 推奨)</h2>
+    <form method="post" action="/storage/tmp">
+      <label>デバイス(任意・マウントする場合)
+        <select name="device">
+          <option value="">(マウント済みを使う)</option>
+          {% for d in devices %}{% for c in d.children or [d] %}
+            <option value="/dev/{{ c.name }}">/dev/{{ c.name }} — {{ c.size }} {{ c.fstype or '' }} {{ c.mountpoint or '' }}</option>
+          {% endfor %}{% endfor %}
+        </select>
+      </label>
+      <label>保存パス<input name="path" value="{{ cfg.recorded_tmp }}" required></label>
+      <button type="submit">保存先を設定</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>最終保存先(NAS / SMB)</h2>
+    <form method="post" action="/storage/nas">
+      <label>NAS ホスト/IP<input name="host" value="{{ cfg.nas_host }}" placeholder="192.168.1.10" required></label>
+      <label>共有名<input name="share" value="{{ cfg.nas_share }}" placeholder="video" required></label>
+      <label>ユーザー名<input name="user" value="{{ cfg.nas_user }}" required></label>
+      <label>パスワード<input name="password" type="password" placeholder="(保存時のみ)" required></label>
+      <label>ドメイン(任意)<input name="domain" value="{{ cfg.nas_domain }}"></label>
+      <label>マウント先<input name="mountpoint" value="{{ cfg.recorded_nas }}" required></label>
+      <button type="submit">NAS を接続</button>
+    </form>
+    <p class="hint">認証情報は 0600 で /etc/rasepg/nas.cred に保存し、/etc/fstab に自動登録します。</p>
+  </section>
+
+{% elif tab == 'encode' %}
+  <section class="card">
+    <h2>エンコード設定</h2>
+    <form method="post" action="/encode">
+      <label>方式
+        <select name="encode_mode">
+          <option value="hw" {{ 'selected' if cfg.encode_mode=='hw' }}>HW (h264_v4l2m2m・軽量/高速)</option>
+          <option value="sw" {{ 'selected' if cfg.encode_mode=='sw' }}>SW (x264・高画質/低速)</option>
+        </select>
+      </label>
+      <label>解像度(高さ)<input name="enc_height" value="{{ cfg.enc_height }}"></label>
+      <label>映像ビットレート(HW)<input name="enc_vbitrate" value="{{ cfg.enc_vbitrate }}"></label>
+      <label>音声ビットレート<input name="enc_abitrate" value="{{ cfg.enc_abitrate }}"></label>
+      <label>CRF(SW)<input name="enc_crf" value="{{ cfg.enc_crf }}"></label>
+      <label>preset(SW)<input name="enc_preset" value="{{ cfg.enc_preset }}"></label>
+      <button type="submit">反映(EPGStation 再起動)</button>
+    </form>
+    <p class="hint">EPGStation の録画ルールで、上の方式に対応するプロファイル(HW-… / SW-…)を選んでください。</p>
+  </section>
+
+{% elif tab == 'services' %}
+  <section class="card">
+    <h2>サービス制御</h2>
+    <form method="post" action="/services/up"><button type="submit">起動 (up -d)</button></form>
+    <form method="post" action="/services/restart"><button type="submit">全再起動</button></form>
+    <form method="post" action="/services/down" onsubmit="return confirm('停止しますか？')"><button class="danger" type="submit">停止 (down)</button></form>
+    <h3>ログ</h3>
+    <a class="btn" href="/logs/mirakurun">Mirakurun ログ</a>
+    <a class="btn" href="/logs/epgstation">EPGStation ログ</a>
+    <a class="btn" href="/logs/mariadb">DB ログ</a>
+  </section>
+
+{% elif tab == 'system' %}
+  <section class="card">
+    <h2>ネットワーク / システム</h2>
+    <form method="post" action="/system/hostname">
+      <label>ホスト名<input name="hostname" placeholder="rasepg" required></label>
+      <button type="submit">変更</button>
+    </form>
+    <form method="post" action="/system/timezone">
+      <label>タイムゾーン<input name="tz" value="{{ cfg.tz }}" required></label>
+      <button type="submit">変更</button>
+    </form>
+    <form method="post" action="/system/wifi">
+      <label>WiFi SSID<input name="ssid" required></label>
+      <label>WiFi パスワード<input name="psk" type="password" required></label>
+      <button type="submit">接続</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>管理パネルのパスワード</h2>
+    <form method="post" action="/system/password">
+      <label>新しいパスワード<input name="password" type="password" required></label>
+      <button type="submit">変更</button>
+    </form>
+    {% if not cfg.setup_done %}<p class="hint danger">初期パスワードのままです。変更してください。</p>{% endif %}
+  </section>
+{% endif %}
+</main>
+</body>
+</html>

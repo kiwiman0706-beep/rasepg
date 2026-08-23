@@ -1,0 +1,22 @@
+:root { --bg:#0f172a; --card:#1e293b; --fg:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --danger:#f87171; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--fg); }
+header { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; background:var(--card); border-bottom:1px solid #334155; }
+header h1 { font-size:1.2rem; margin:0; }
+nav a { color:var(--accent); margin-left:1rem; text-decoration:none; }
+.tabs { display:flex; flex-wrap:wrap; gap:.25rem; padding:.75rem 1.5rem 0; background:var(--card); }
+.tab { padding:.5rem 1rem; color:var(--muted); text-decoration:none; border-radius:8px 8px 0 0; }
+.tab.active { background:var(--bg); color:var(--fg); font-weight:600; }
+main { padding:1.5rem; display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); }
+.card { background:var(--card); border:1px solid #334155; border-radius:12px; padding:1.25rem; }
+.card h2 { margin-top:0; font-size:1.05rem; }
+label { display:block; margin:.6rem 0; font-size:.9rem; color:var(--muted); }
+input,select { width:100%; margin-top:.25rem; padding:.5rem; border-radius:8px; border:1px solid #475569; background:#0b1220; color:var(--fg); }
+button,.btn { display:inline-block; margin:.4rem .4rem 0 0; padding:.55rem 1rem; border:0; border-radius:8px; background:var(--accent); color:#04222e; font-weight:600; cursor:pointer; text-decoration:none; }
+button.danger,.danger { background:var(--danger); color:#2a0606; }
+.hint { color:var(--muted); font-size:.8rem; }
+table { width:100%; border-collapse:collapse; }
+th,td { text-align:left; padding:.4rem .5rem; border-bottom:1px solid #334155; font-size:.9rem; }
+.flash { margin:1rem 1.5rem 0; padding:.75rem 1rem; background:#164e63; border:1px solid var(--accent); border-radius:8px; }
+.logs { margin:1.5rem; padding:1rem; background:#020617; border-radius:8px; overflow:auto; max-height:80vh; font-size:.8rem; }
+code { background:#020617; padding:.1rem .3rem; border-radius:4px; }

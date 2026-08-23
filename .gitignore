@@ -1,0 +1,21 @@
+# ローカル生成物
+stack/.env
+stack/admin/venv/
+__pycache__/
+*.pyc
+
+# pi-gen 作業物 / ビルド成果
+image/pi-gen/
+pi-gen/
+*.img
+*.img.xz
+*.zip
+out/
+
+# ローカルの録画/マウント先
+recorded/
+nas/
+
+# 認証情報(誤コミット防止)
+*.cred
+config.json

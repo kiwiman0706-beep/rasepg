@@ -1,0 +1,56 @@
+## EPGStation 設定
+# 録画は一時領域(SSD)に取り、最終保存は NAS。エンコード後に元TSを消す運用を既定にします。
+
+port: 8888
+socketioPort: 8888
+
+# Mirakurun (同一 compose ネットワーク内)
+mirakurunPath: 'http://mirakurun:40772'
+
+# DB (MariaDB)
+dbtype: mysql
+mysql:
+  host: mariadb
+  port: 3306
+  user: epgstation
+  password: epgstation
+  database: epgstation
+  charset: utf8mb4
+
+epgUpdateIntervalTime: 10
+conflictPriority: 1
+recPriority: 2
+
+# ---- 保存先 ----
+# recordedTmp: 録画中の一時置き場(外付けSSD)。完了後 recorded へ移動。
+recordedTmp: '/recorded'
+# recorded: 最終保存先(NAS/SMB マウント)。EPGStation のライブラリはここを基準に管理。
+recorded:
+  - name: nas
+    path: '/nas'
+
+recordedFormat: '%YEAR%%MONTH%%DAY%_%HOUR%%MIN%_%TITLE%'
+recordedFileExtension: .ts
+
+# ---- エンコード ----
+# 同時エンコード数(発熱と速度のバランス。Pi4 は 1 推奨)
+encodeProcessNum: 1
+concurrentEncodeNum: 1
+# rate = 録画時間に対する想定処理倍率(キュー見積り用)。HW は速い/SW は遅い。
+encode:
+  - name: HW-H264-720p-2Mbps    # 既定: ハードウェアエンコード(軽量・宅外視聴向け)
+    cmd: '%NODE% /app/config/enc/hw-h264.js'
+    suffix: .mp4
+    rate: 4.0
+  - name: SW-H264-720p          # 画質優先: ソフトウェア x264(遅いが高画質)
+    cmd: '%NODE% /app/config/enc/sw-h264.js'
+    suffix: .mp4
+    rate: 15.0
+
+# サムネイル
+thumbnail: '/app/thumbnail'
+thumbnailCmd: 'ffmpeg -y -i %INPUT% -ss 15 -vframes 1 -f image2 -s 480x270 %OUTPUT%'
+
+# ストレージ空き容量の下限(バイト)。下回ると古い録画から自動削除の対象に。
+# 0 で無効。RASEPG Admin から調整可能。
+storageLimitCheckIntervalTime: 60

@@ -1,0 +1,17 @@
+[Unit]
+Description=RASEPG Admin - 録画サーバ Web 管理パネル
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# マウント/fstab/nmcli/docker を扱うため root で動作
+User=root
+Environment=RASEPG_ROOT=/opt/rasepg
+WorkingDirectory=/opt/rasepg/stack/admin
+ExecStart=/opt/rasepg/stack/admin/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 9000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
