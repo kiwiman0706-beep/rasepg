@@ -36,9 +36,13 @@ recordedFileExtension: .ts
 # 同時エンコード数(発熱と速度のバランス。Pi4 は 1 推奨)
 encodeProcessNum: 1
 concurrentEncodeNum: 1
-# rate = 録画時間に対する想定処理倍率(キュー見積り用)。HW は速い/SW は遅い。
+# rate = 録画時間に対する想定処理倍率(キュー見積り用)。小さいほど速い。
 encode:
-  - name: HW-H264-720p-2Mbps    # 既定: ハードウェアエンコード(軽量・宅外視聴向け)
+  - name: Remux-MP4             # 既定・推奨: 再エンコ無しで原画質MP4化(ほぼ無負荷)
+    cmd: '%NODE% /app/config/enc/remux.js'
+    suffix: .mp4
+    rate: 0.2
+  - name: HW-H264-720p-2Mbps    # 持ち出し用: ハードウェアエンコード(軽量・宅外視聴向け)
     cmd: '%NODE% /app/config/enc/hw-h264.js'
     suffix: .mp4
     rate: 4.0

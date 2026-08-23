@@ -85,8 +85,9 @@
   <section class="card">
     <h2>エンコード設定</h2>
     <form method="post" action="/encode">
-      <label>方式
+      <label>既定の方式
         <select name="encode_mode">
+          <option value="remux" {{ 'selected' if cfg.encode_mode=='remux' }}>Remux (再エンコ無し・原画質/ほぼ無負荷) ◎推奨</option>
           <option value="hw" {{ 'selected' if cfg.encode_mode=='hw' }}>HW (h264_v4l2m2m・軽量/高速)</option>
           <option value="sw" {{ 'selected' if cfg.encode_mode=='sw' }}>SW (x264・高画質/低速)</option>
         </select>
@@ -98,7 +99,7 @@
       <label>preset(SW)<input name="enc_preset" value="{{ cfg.enc_preset }}"></label>
       <button type="submit">反映(EPGStation 再起動)</button>
     </form>
-    <p class="hint">EPGStation の録画ルールで、上の方式に対応するプロファイル(HW-… / SW-…)を選んでください。</p>
+    <p class="hint">EPGStation の録画ルールで対応プロファイルを選択: 通常録画は <b>Remux-MP4</b>(原画質)、持ち出し用は <b>HW-H264-720p-2Mbps</b>、画質優先は <b>SW-H264-720p</b>。HW/SW の数値のみここで調整できます(Remux はパラメータ不要)。</p>
   </section>
 
 {% elif tab == 'services' %}

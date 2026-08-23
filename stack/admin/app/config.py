@@ -25,7 +25,7 @@ DEFAULTS: dict = {
     "nas_domain": "",
     "nas_enabled": False,
     # エンコード
-    "encode_mode": "hw",          # hw | sw
+    "encode_mode": "remux",       # remux | hw | sw
     "enc_height": "720",
     "enc_vbitrate": "2000k",
     "enc_abitrate": "128k",
