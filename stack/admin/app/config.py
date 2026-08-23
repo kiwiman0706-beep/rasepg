@@ -15,6 +15,8 @@ NAS_CRED = CONF_DIR / "nas.cred"
 
 DEFAULTS: dict = {
     "tz": "Asia/Tokyo",
+    # チューナーサーバ backend: mirakurun(既定/情報量多) | mirakc(軽量)
+    "tuner_backend": "mirakurun",
     # 保存先
     "recorded_tmp": "/mnt/ssd/recorded",
     "recorded_nas": "/mnt/nas",

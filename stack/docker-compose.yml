@@ -1,9 +1,15 @@
-# RASEPG - 録画スタック (Mirakurun + EPGStation + MariaDB)
+# RASEPG - 録画スタック (Mirakurun / mirakc + EPGStation + MariaDB)
 # 管理パネル(RASEPG Admin)はホスト側 systemd で動作するためここには含めません。
+#
+# チューナーサーバは Mirakurun と mirakc の両対応。profile で切り替えます:
+#   Mirakurun: docker compose --profile mirakurun up -d   (既定/情報量多)
+#   mirakc   : docker compose --profile mirakc    up -d   (軽量/Rust製)
+# 切替は RASEPG Admin の[サービス]タブから(推奨)。EPGStation の接続先も自動で書き換わります。
 #
 # パス/保存先は .env で切り替えます（.env は RASEPG Admin が自動生成）。
 services:
   mirakurun:
+    profiles: ["mirakurun"]
     # recdvb(--b25) + libarib25 + pcsclite を同梱したカスタムイメージ
     build:
       context: ./mirakurun
@@ -25,7 +31,33 @@ services:
     environment:
       TZ: ${TZ:-Asia/Tokyo}
     ports:
-      - "40772:40772"   # Mirakurun API
+      - "40772:40772"   # Mirakurun 互換 API
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  mirakc:
+    profiles: ["mirakc"]
+    # mirakc(Rust・軽量) + recdvb を同梱したカスタムイメージ
+    build:
+      context: ./mirakc
+      dockerfile: Dockerfile
+    image: rasepg/mirakc:local
+    container_name: mirakc
+    restart: unless-stopped
+    init: true
+    devices:
+      - /dev/dvb:/dev/dvb
+    volumes:
+      - ./mirakc/config.yml:/etc/mirakc/config.yml
+      - mirakc-data:/var/lib/mirakc
+      - /run/pcscd:/run/pcscd
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+      RUST_LOG: info
+    ports:
+      # Mirakurun と同じ 40772。両方同時起動はしない(profile で片方のみ)
+      - "40772:40772"   # mirakc = Mirakurun 互換 API
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -55,8 +87,9 @@ services:
     image: l3tnun/epgstation:master-debian
     container_name: epgstation
     restart: unless-stopped
+    # チューナーは profile で片方のみ起動するため hard-dep にしない
+    # (EPGStation は接続先を自動リトライする)
     depends_on:
-      - mirakurun
       - mariadb
     environment:
       TZ: ${TZ:-Asia/Tokyo}
@@ -87,5 +120,6 @@ services:
 
 volumes:
   mirakurun-data:
+  mirakc-data:
   mariadb-data:
   epgstation-data:

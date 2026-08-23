@@ -4,7 +4,8 @@
 port: 8888
 socketioPort: 8888
 
-# Mirakurun (同一 compose ネットワーク内)
+# チューナーサーバ接続先(同一 compose ネットワーク内)。
+# RASEPG Admin の[サービス]タブでバックエンド(mirakurun/mirakc)を切替えると自動で書き換わります。
 mirakurunPath: 'http://mirakurun:40772'
 
 # DB (MariaDB)
@@ -58,3 +59,17 @@ thumbnailCmd: 'ffmpeg -y -i %INPUT% -ss 15 -vframes 1 -f image2 -s 480x270 %OUTP
 # ストレージ空き容量の下限(バイト)。下回ると古い録画から自動削除の対象に。
 # 0 で無効。RASEPG Admin から調整可能。
 storageLimitCheckIntervalTime: 60
+
+# ---- ライブ視聴(放送中の番組をブラウザで視聴) ----
+# Pi4 では m2ts-ll(低遅延・無変換)が最も軽い。スマホ等の互換性用に HW 変換も用意。
+stream:
+  live:
+    ts:
+      # 無変換・低遅延(EPGStation 内蔵の mpegts.js プレイヤーで再生)。Pi4 に最も優しい。
+      m2tsll:
+        - name: 無変換(低遅延)
+          cmd: '%FFMPEG% -re -dual_mono_mode main -i pipe:0 -map 0 -c copy -f mpegts pipe:1'
+      # HW 変換(h264_v4l2m2m)。スマホ等の互換性が必要なときに。
+      m2ts:
+        - name: 720p (HW変換)
+          cmd: '%FFMPEG% -re -dual_mono_mode main -i pipe:0 -sn -threads 0 -vf bwdif=0,scale=-2:720 -c:v h264_v4l2m2m -b:v 2500k -c:a aac -ar 48000 -b:a 128k -ac 2 -f mpegts pipe:1'

@@ -22,9 +22,11 @@ set -a; source "$STACK/.env"; set +a
 mkdir -p "${RECORDED_TMP:-/mnt/ssd/recorded}" "${RECORDED_NAS:-/mnt/nas}" || true
 
 log "Docker イメージを構築/取得します(初回のみ・数分〜十数分)"
-docker compose -f "$STACK/docker-compose.yml" pull || true
-docker compose -f "$STACK/docker-compose.yml" build || true
-docker compose -f "$STACK/docker-compose.yml" up -d
+# 既定 backend は Mirakurun。mirakc へは後から管理パネルで切替(その時にビルド)。
+COMPOSE=(docker compose -f "$STACK/docker-compose.yml" --profile mirakurun)
+"${COMPOSE[@]}" pull || true
+"${COMPOSE[@]}" build || true
+"${COMPOSE[@]}" up -d
 
 touch "$MARK"
 log "初回セットアップ完了。管理パネル: http://<IP>:9000  録画UI: http://<IP>:8888"

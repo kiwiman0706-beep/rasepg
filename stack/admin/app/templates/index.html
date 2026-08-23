@@ -104,12 +104,29 @@
 
 {% elif tab == 'services' %}
   <section class="card">
+    <h2>チューナー backend</h2>
+    <p class="hint">現在: <b>{{ cfg.tuner_backend }}</b>。切替えると EPGStation の接続先も自動で書き換わり再起動します。</p>
+    <form method="post" action="/services/backend" onsubmit="return confirm('backend を切替えますか？(数分・EPGStation再起動)')">
+      <label>使用するチューナーサーバ
+        <select name="backend">
+          <option value="mirakurun" {{ 'selected' if cfg.tuner_backend=='mirakurun' }}>Mirakurun (情報量が多い・既定)</option>
+          <option value="mirakc" {{ 'selected' if cfg.tuner_backend=='mirakc' }}>mirakc (軽量・Rust製)</option>
+        </select>
+      </label>
+      <button type="submit">backend を切替え</button>
+    </form>
+  </section>
+  <section class="card">
     <h2>サービス制御</h2>
     <form method="post" action="/services/up"><button type="submit">起動 (up -d)</button></form>
     <form method="post" action="/services/restart"><button type="submit">全再起動</button></form>
     <form method="post" action="/services/down" onsubmit="return confirm('停止しますか？')"><button class="danger" type="submit">停止 (down)</button></form>
     <h3>ログ</h3>
-    <a class="btn" href="/logs/mirakurun">Mirakurun ログ</a>
+    {% if cfg.tuner_backend == 'mirakc' %}
+      <a class="btn" href="/logs/mirakc">mirakc ログ</a>
+    {% else %}
+      <a class="btn" href="/logs/mirakurun">Mirakurun ログ</a>
+    {% endif %}
     <a class="btn" href="/logs/epgstation">EPGStation ログ</a>
     <a class="btn" href="/logs/mariadb">DB ログ</a>
   </section>

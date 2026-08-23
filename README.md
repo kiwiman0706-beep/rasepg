@@ -3,7 +3,7 @@
 Raspberry Pi 4 + PLEX PX-Q1UD を使った地デジ録画サーバーを、
 **SDカードに焼いて挿すだけ／設定はブラウザだけ**で完結させるためのプロジェクトです。
 
-- 録画バックエンド: **Mirakurun**(recdvb + arib25 で B-CAS 解除)
+- 録画バックエンド: **Mirakurun / mirakc**(recdvb + arib25 で B-CAS 解除・Webから切替可)
 - 録画管理/番組表/自動エンコード: **EPGStation**
 - 保存先(外付けSSD / NAS)・NAS接続・エンコード・WiFi・サービス起動停止:
   同梱の **RASEPG Admin(Web管理パネル)**
@@ -45,8 +45,9 @@ rasepg/
 │   ├── 20-build-and-flash.md
 │   └── 30-usage.md
 ├── stack/                    録画スタック(Docker)
-│   ├── docker-compose.yml    Mirakurun / EPGStation / MariaDB
+│   ├── docker-compose.yml    Mirakurun / mirakc / EPGStation / MariaDB (profile切替)
 │   ├── mirakurun/            Dockerfile(recdvb+arib25) と tuners/channels/server
+│   ├── mirakc/               Dockerfile(recdvb) と config.yml (軽量backend)
 │   ├── epgstation/           config.yml と エンコードスクリプト(HW/SW)
 │   └── admin/                RASEPG Admin(FastAPI・ホストsystemdで動作)
 ├── bootstrap/                実機/イメージ共通のセットアップ

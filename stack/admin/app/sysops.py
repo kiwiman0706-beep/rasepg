@@ -24,21 +24,67 @@ def run(cmd: list[str] | str, timeout: int = 120) -> tuple[int, str]:
 
 
 # ---------- Docker スタック ----------
-def compose(*args: str, timeout: int = 300) -> tuple[int, str]:
+def compose(*args: str, profile: str = "", timeout: int = 300) -> tuple[int, str]:
     base = ["docker", "compose", "-f", str(config.STACK_DIR / "docker-compose.yml")]
+    if profile:
+        base += ["--profile", profile]
     return run(base + list(args), timeout=timeout)
 
 
+def _backend() -> str:
+    return config.load().get("tuner_backend", "mirakurun")
+
+
+def _stop_tuners() -> None:
+    # profile 指定サービスも確実に停止するため両 profile を付与
+    run(["docker", "compose", "-f", str(config.STACK_DIR / "docker-compose.yml"),
+         "--profile", "mirakurun", "--profile", "mirakc",
+         "stop", "mirakurun", "mirakc"], timeout=120)
+
+
 def stack_up() -> tuple[int, str]:
-    return compose("up", "-d", timeout=1800)
+    # 選択中の backend のみ起動(もう片方は停止)。mariadb/epgstation は常時。
+    _stop_tuners()
+    return compose("up", "-d", profile=_backend(), timeout=1800)
 
 
 def stack_down() -> tuple[int, str]:
-    return compose("down")
+    # 両 profile を含めて確実に停止
+    return run(
+        ["docker", "compose", "-f", str(config.STACK_DIR / "docker-compose.yml"),
+         "--profile", "mirakurun", "--profile", "mirakc", "down"], timeout=300)
 
 
 def stack_restart(service: str = "") -> tuple[int, str]:
-    return compose("restart", *( [service] if service else [] ))
+    return compose("restart", *( [service] if service else [] ), profile=_backend())
+
+
+def set_backend(backend: str) -> tuple[int, str]:
+    """チューナー backend(mirakurun/mirakc)を切替え、EPGStation 接続先を書き換えて再起動。"""
+    if backend not in {"mirakurun", "mirakc"}:
+        return 1, "unknown backend"
+    cfg = config.load()
+    cfg["tuner_backend"] = backend
+    config.save(cfg)
+    _set_epgstation_backend(backend)
+    _stop_tuners()
+    code, out = compose("up", "-d", profile=backend, timeout=1800)
+    compose("restart", "epgstation")
+    return code, out
+
+
+def _set_epgstation_backend(backend: str) -> None:
+    """EPGStation config.yml の mirakurunPath を選択 backend に書き換える。"""
+    cfg_path = config.STACK_DIR / "epgstation" / "config.yml"
+    if not cfg_path.exists():
+        return
+    lines = cfg_path.read_text().splitlines()
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("mirakurunPath:"):
+            indent = line[: len(line) - len(line.lstrip())]
+            lines[i] = f"{indent}mirakurunPath: 'http://{backend}:40772'"
+            break
+    cfg_path.write_text("\n".join(lines) + "\n")
 
 
 def stack_ps() -> list[dict]:
@@ -190,8 +236,18 @@ def wifi_connect(ssid: str, psk: str) -> tuple[int, str]:
 
 
 def channel_scan() -> tuple[int, str]:
-    return compose(
-        "exec", "-T", "mirakurun",
-        "mirakurun", "config", "channels", "scan", "--type", "GR",
-        timeout=1800,
+    backend = _backend()
+    if backend == "mirakurun":
+        return compose(
+            "exec", "-T", "mirakurun",
+            "mirakurun", "config", "channels", "scan", "--type", "GR",
+            profile="mirakurun", timeout=1800,
+        )
+    # mirakc は API スキャンを持たないため、config.yml の channels を手動設定/転記する。
+    # (Mirakurun で一度スキャンし、channels.yml の channel 値を mirakc/config.yml へ転記が簡単)
+    return (
+        0,
+        "mirakc はチャンネルを config.yml で管理します。Mirakurun で一度スキャンして "
+        "channels.yml を作り、その channel 値を stack/mirakc/config.yml に転記してください "
+        "(詳細は docs/30-usage.md)。",
     )

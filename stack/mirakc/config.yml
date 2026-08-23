@@ -1,0 +1,35 @@
+# mirakc 設定 (Mirakurun 互換 API を 40772 で提供)
+# PX-Q1UD(DVB) を recdvb で読み出し、--b25 で B-CAS 解除(pcscd 経由)。
+# EPGStation からは http://mirakc:40772 で参照(RASEPG Admin が接続先を自動設定)。
+
+server:
+  addrs:
+    - !http '0.0.0.0:40772'
+
+epg:
+  cache-dir: /var/lib/mirakc/epg
+
+# チューナー: PX-Q1UD = GR 4本。{{{channel}}} は channels の物理ch(13-62)に置換。
+tuners:
+  - name: PX-Q1UD-0
+    types: [GR]
+    command: recdvb --b25 --strip --dev 0 {{{channel}}} - -
+  - name: PX-Q1UD-1
+    types: [GR]
+    command: recdvb --b25 --strip --dev 1 {{{channel}}} - -
+  - name: PX-Q1UD-2
+    types: [GR]
+    command: recdvb --b25 --strip --dev 2 {{{channel}}} - -
+  - name: PX-Q1UD-3
+    types: [GR]
+    command: recdvb --b25 --strip --dev 3 {{{channel}}} - -
+
+# チャンネル: 地域により物理ch/serviceIdが異なる。代表例のみ(要スキャン)。
+# Mirakurun でスキャン済みなら channels.yml の channel 値をここへ転記すると早い。
+channels:
+  - name: NHK総合
+    type: GR
+    channel: '27'
+  - name: Eテレ
+    type: GR
+    channel: '26'

@@ -66,9 +66,15 @@ def services(action: str, service: str = Form(""), _: str = Depends(auth)):
     return _flash("services", f"サービス操作: {action} 実行しました")
 
 
+@app.post("/services/backend")
+def switch_backend(backend: str = Form(...), _: str = Depends(auth)):
+    sysops.set_backend(backend)
+    return _flash("services", f"チューナー backend を {backend} に切替えました")
+
+
 @app.get("/logs/{service}", response_class=HTMLResponse)
 def view_logs(service: str, request: Request, _: str = Depends(auth)):
-    if service not in {"mirakurun", "epgstation", "mariadb"}:
+    if service not in {"mirakurun", "mirakc", "epgstation", "mariadb"}:
         raise HTTPException(status_code=404)
     return templates.TemplateResponse(
         "logs.html",
